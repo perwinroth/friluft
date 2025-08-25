@@ -44,7 +44,7 @@ jobs:
           ENRICH_MAX: "150"
         run: |
           set -e
-          python etl/run_etl.py
+          python -m etl.run_etl
 
       - name: Validate GeoJSON
         run: |
