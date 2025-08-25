@@ -1,28 +1,38 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
+"use client";
+import { useEffect, useMemo, useState } from 'react'
 
 type EventItem = { name: string; date?: string; location?: string; description?: string; registrationUrl?: string }
 
-async function loadEvents(): Promise<EventItem[]> {
-  const p = path.join(process.cwd(), '..', 'data', 'events.json')
-  try {
-    const buf = await fs.readFile(p, 'utf-8')
-    const items = JSON.parse(buf)
-    return (items as EventItem[]).sort((a,b)=> (a.date||'').localeCompare(b.date||''))
-  } catch {
-    return []
-  }
-}
+export default function EventsPage() {
+  const [events, setEvents] = useState<EventItem[]>([])
+  const [month, setMonth] = useState<string>('')
+  const [region, setRegion] = useState<string>('')
 
-export default async function EventsPage() {
-  const events = await loadEvents()
+  useEffect(()=>{
+    fetch('/api/data?kind=events').then(r=>r.json()).then((items: EventItem[])=>{
+      setEvents((items||[]).sort((a,b)=> (a.date||'').localeCompare(b.date||'')))
+    })
+  },[])
+
+  const filtered = useMemo(()=>{
+    return events.filter(ev => {
+      const okMonth = !month || (ev.date||'').slice(0,7) === month
+      const okRegion = !region || (ev.location||'').toLowerCase().includes(region.toLowerCase())
+      return okMonth && okRegion
+    })
+  }, [events, month, region])
+
   const jsonLd = {
     '@context':'https://schema.org', '@type':'ItemList',
-    itemListElement: events.map(ev => ({
+    itemListElement: filtered.map(ev => ({
       '@type':'Event', name: ev.name, startDate: ev.date, description: ev.description, url: ev.registrationUrl,
       location: { '@type':'Place', name: ev.location, address: ev.location }
     }))
   }
+
+  // Month options from events
+  const months = Array.from(new Set(events.map(e => (e.date||'').slice(0,7)).filter(Boolean))).sort()
+
   return (
     <div className="container">
       <head>
@@ -31,13 +41,24 @@ export default async function EventsPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
       </head>
       <h1>Evenemang</h1>
+      <div className="card" style={{display:'flex', gap:12, alignItems:'center', flexWrap:'wrap'}}>
+        <label> Månad
+          <select value={month} onChange={e=>setMonth(e.target.value)} style={{marginLeft:8}}>
+            <option value="">Alla</option>
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </label>
+        <label> Region/Plats
+          <input type="text" placeholder="t.ex. Stockholm" value={region} onChange={e=>setRegion(e.target.value)} style={{marginLeft:8}} />
+        </label>
+      </div>
       <div className="card">
         <ul style={{listStyle:'none', padding:0}}>
-          {events.map((ev, i)=> (
+          {filtered.map((ev, i)=> (
             <li key={i} style={{border:'1px solid #eee', borderRadius:10, padding:12, marginBottom:8}}>
               <strong>{ev.name}</strong><br/>
               <small>{ev.date} – {ev.location}</small><br/>
-              {ev.registrationUrl ? <a className="pill" href={ev.registrationUrl} target="_blank" rel="noopener">Anmälan</a> : null}
+              {ev.registrationUrl ? <a className="btn" href={ev.registrationUrl} target="_blank" rel="noopener">Anmälan</a> : null}
             </li>
           ))}
         </ul>
@@ -45,4 +66,3 @@ export default async function EventsPage() {
     </div>
   )
 }
-

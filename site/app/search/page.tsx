@@ -11,6 +11,7 @@ export default function SearchPage() {
     national_park:true, nature_reserve:true, camp_site:true, shelter:true,
     viewpoint:true, picnic_site:true, slipway:true, canoe_kayak:true, boat_rental:true
   });
+  const [show, setShow] = useState<'map'|'list'|'both'>('list');
 
   const activeCats = useMemo(()=> Object.keys(cats).filter(k=>cats[k]), [cats]);
 
@@ -18,6 +19,12 @@ export default function SearchPage() {
     const params = new URLSearchParams(window.location.search);
     const q = params.get('q');
     if (q) setQuery(q);
+    const onResize = () => {
+      if (window.innerWidth >= 1024) setShow('both'); else setShow('list');
+    };
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   },[]);
 
   return (
@@ -32,11 +39,17 @@ export default function SearchPage() {
         ))}
       </div>
       <div className="grid">
-        <div className="card" style={{minHeight:'65vh'}}>
-          <LeafletMap query={query} cats={activeCats} height="58vh" />
+        <div className="card" style={{minHeight:'60vh', display: show==='list' ? 'none' : 'block'}}>
+          <LeafletMap query={query} cats={activeCats} height="56vh" />
         </div>
-        <div className="card">
+        <div className="card" style={{display: show==='map' ? 'none' : 'block'}}>
           <ResultsList query={query} cats={activeCats} />
+        </div>
+      </div>
+      <div className="card" style={{position:'sticky', bottom:12, display: 'flex', justifyContent:'center'}}>
+        <div style={{display:'flex', gap:8}}>
+          <button className="btn" style={{background: show==='list'?'#0f766e':'#334155'}} onClick={()=>setShow('list')}>Lista</button>
+          <button className="btn" style={{background: show==='map'?'#0f766e':'#334155'}} onClick={()=>setShow('map')}>Karta</button>
         </div>
       </div>
     </div>

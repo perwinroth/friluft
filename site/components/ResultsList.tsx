@@ -35,13 +35,18 @@ export default function ResultsList({ query = '', cats = [] }: Props) {
         {filtered.map(it => (
           <li key={it.id} className="card" style={{marginBottom:8}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:8}}>
-              <div style={{fontWeight:600}}>
+              <div style={{fontWeight:600, display:'flex', alignItems:'center', gap:8}}>
+                {iconFor(it.cats?.[0])}
                 <Link href={`/l/${slugify(it.id)}`}>{it.name}</Link>
               </div>
               {it.bookable ? <span className="badge" style={{background:'#0f766e', color:'#fff'}}>Boka</span> : null}
             </div>
             <div style={{color:'#64748b', fontSize:12, margin:'6px 0'}}>
-              {(it.cats||[]).map((c:string)=> (<span key={c} className="badge" style={{marginRight:6, background:'#eef2ff', color:'#3730a3'}}>{c}</span>))}
+              {(it.cats||[]).map((c:string)=> (
+                <span key={c} className="badge" style={{marginRight:6, background:'#eef2ff', color:'#3730a3', display:'inline-flex', alignItems:'center', gap:6}}>
+                  {iconFor(c, 12)} {c}
+                </span>
+              ))}
             </div>
             <div style={{display:'flex', gap:10, alignItems:'center'}}>
               {it.link ? <a className="btn" href={it.link} target="_blank" rel="noopener">{it.bookable ? 'Boka' : 'Länk'}</a> : null}
@@ -61,6 +66,24 @@ function slugify(s: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'plats';
+}
+
+function iconFor(cat?: string, size = 16) {
+  if (!cat) return null;
+  const map: Record<string, string> = {
+    hiking: '/icons/hiking.svg',
+    canoe_kayak: '/icons/canoe_kayak.svg',
+    camp_site: '/icons/camp_site.svg',
+    shelter: '/icons/shelter.svg',
+    viewpoint: '/icons/viewpoint.svg',
+    picnic_site: '/icons/picnic_site.svg',
+    slipway: '/icons/slipway.svg',
+    boat_rental: '/icons/boat_rental.svg',
+    national_park: '/icons/hiking.svg',
+    nature_reserve: '/icons/hiking.svg',
+  };
+  const src = map[cat] || map.hiking;
+  return <img src={src} alt="" width={size} height={size} style={{display:'inline-block'}} />
 }
 
 function focusOnMap(lat?: number, lon?: number) {

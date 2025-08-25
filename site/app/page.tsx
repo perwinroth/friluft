@@ -21,8 +21,10 @@ export default function HomePage() {
           ))}
         </div>
       </div>
-      <p style={{marginTop:16}}><Link href="/search">Öppna kartan →</Link></p>
+      <p style={{marginTop:16, display:'flex', gap:12}}>
+        <Link className="btn" href="/search">Sök platser</Link>
+        <Link className="btn" href="/events" style={{background:'#334155'}}>Evenemang</Link>
+      </p>
     </div>
   )
 }
-
