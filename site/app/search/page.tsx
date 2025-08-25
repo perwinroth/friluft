@@ -1,6 +1,7 @@
 "use client";
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
+import ResultsList from '../../components/ResultsList'
 
 const LeafletMap = dynamic(()=> import('../../components/Map'), { ssr: false });
 
@@ -30,10 +31,14 @@ export default function SearchPage() {
           <button key={k} className="pill" onClick={()=> setCats(s=>({...s,[k]:!s[k]}))} style={{background: cats[k]?'#fff':'#f5f5f5'}}>{k}</button>
         ))}
       </div>
-      <div className="card">
-        <LeafletMap query={query} cats={activeCats} />
+      <div className="grid">
+        <div className="card" style={{minHeight:'70vh'}}>
+          <LeafletMap query={query} cats={activeCats} />
+        </div>
+        <div className="card">
+          <ResultsList query={query} cats={activeCats} />
+        </div>
       </div>
     </div>
   )
 }
-

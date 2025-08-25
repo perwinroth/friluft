@@ -104,11 +104,12 @@ function popupHtml(props) {
   const name = props.name || '(namnlös)';
   const link = props.link || props.osm_url;
   const cats = (props.categories || []).map((c) => CATEGORY_LABELS[c] || c).join(', ');
-  const safeLink = link ? `<a href="${link}" target="_blank" rel="noopener">Länk</a>` : '';
+  const book = props.bookable ? ' • Bokningsbar' : '';
+  const safeLink = link ? `<a href="${link}" target="_blank" rel="noopener">${props.bookable ? 'Boka' : 'Länk'}</a>` : '';
   return `
     <div class="popup">
       <strong>${name}</strong><br/>
-      <small>${cats}</small><br/>
+      <small>${cats}${book}</small><br/>
       ${safeLink}
     </div>
   `;
@@ -200,7 +201,7 @@ function renderList() {
     const safeLink = it.link ? `<a href="${it.link}" target="_blank" rel="noopener">Länk</a>` : '';
     html.push(`
       <div class="list-item" data-id="${it.id}">
-        <div class="name"><a href="places/${slug}.html">${nameHtml}</a></div>
+        <div class="name"><a href="places/${slug}.html">${nameHtml}</a> ${it.bookable ? '<span class="badge" style="background:#0f766e">Boka</span>' : ''}</div>
         <div class="meta">${badges} ${safeLink}</div>
       </div>
     `);

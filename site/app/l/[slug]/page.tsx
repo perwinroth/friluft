@@ -27,12 +27,20 @@ export default async function ListingPage({ params }: { params: { slug: string }
       'url': website || undefined
     }
   };
+  const breadcrumbs = {
+    '@context':'https://schema.org', '@type':'BreadcrumbList',
+    itemListElement: [
+      { '@type':'ListItem', position:1, name:'Hem', item:'/search' },
+      { '@type':'ListItem', position:2, name: match.name, item:`/l/${params.slug}` }
+    ]
+  };
   return (
     <div className="container">
       <head>
         <title>{title}</title>
         <meta name="description" content={desc} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(breadcrumbs)}} />
       </head>
       <p><a href="/search">← Till sök</a></p>
       <h1>{match.name}</h1>
@@ -50,4 +58,3 @@ export default async function ListingPage({ params }: { params: { slug: string }
     </div>
   );
 }
-

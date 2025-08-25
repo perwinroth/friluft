@@ -13,6 +13,7 @@ from .sources.municipal_generic import fetch_municipal_dataset
 from .util.enrich import enrich_places_opengraph
 from .util.dedupe import dedupe_places
 from .util.bookable import detect_booking_type
+from .sources.events_ical import fetch_events
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / 'data'
@@ -100,7 +101,15 @@ def main() -> int:
         })
     (DATA_DIR / 'friluft.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'features': features}, ensure_ascii=False), encoding='utf-8')
 
-    print(f'OSM: {len(osm_places)}  HAV: {len(hav_places)}  Muni: {len(muni_places)}  Total (deduped): {len(places)}')
+    # Events (optional via ICS feeds)
+    ical_env = os.environ.get('EVENT_ICAL_URLS', '').strip()
+    events: List[Dict[str, Any]] = []
+    if ical_env:
+        urls = [u.strip() for u in ical_env.split(',') if u.strip()]
+        events = fetch_events(urls)
+        (DATA_DIR / 'events.json').write_text(json.dumps(events, ensure_ascii=False), encoding='utf-8')
+
+    print(f'OSM: {len(osm_places)}  HAV: {len(hav_places)}  Muni: {len(muni_places)}  Total (deduped): {len(places)}  Events: {len(events)}')
     return 0
 
 

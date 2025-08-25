@@ -17,12 +17,21 @@ export default function Map({ query = '', cats = [] }: Props) {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-    // @ts-ignore
-    const cluster = (L as any).markerClusterGroup ? (L as any).markerClusterGroup({
-      disableClusteringAtZoom:14, showCoverageOnHover:false, spiderfyOnMaxZoom:true, maxClusterRadius:50
-    }) : L.layerGroup();
-    clusterRef.current = cluster;
-    map.addLayer(cluster);
+    const ensureCluster = async () => {
+      // @ts-ignore
+      if (!(L as any).markerClusterGroup) {
+        await loadCss('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css');
+        await loadCss('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css');
+        await loadScript('https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js');
+      }
+      // @ts-ignore
+      const cluster = (L as any).markerClusterGroup ? (L as any).markerClusterGroup({
+        disableClusteringAtZoom:14, showCoverageOnHover:false, spiderfyOnMaxZoom:true, maxClusterRadius:50
+      }) : L.layerGroup();
+      clusterRef.current = cluster;
+      map.addLayer(cluster);
+    };
+    ensureCluster();
   },[]);
 
   useEffect(()=>{
@@ -30,7 +39,7 @@ export default function Map({ query = '', cats = [] }: Props) {
     // Clear
     // @ts-ignore
     if (cluster.clearLayers) cluster.clearLayers();
-    fetch('/data/friluft.geojson')
+    fetch('/api/data?kind=geojson')
       .then(r=>r.json())
       .then(geo=>{
         (geo.features||[]).forEach((f:any)=>{
@@ -54,3 +63,18 @@ export default function Map({ query = '', cats = [] }: Props) {
   return <div ref={mapRef} style={{height: '70vh', width: '100%'}} />
 }
 
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src; s.async = true; s.onload = () => resolve(); s.onerror = () => reject();
+    document.head.appendChild(s);
+  });
+}
+
+function loadCss(href: string) {
+  return new Promise<void>((resolve) => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href; l.onload = () => resolve();
+    document.head.appendChild(l);
+  });
+}

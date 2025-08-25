@@ -31,7 +31,7 @@ jobs:
       - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 lxml
+          pip install requests beautifulsoup4 lxml icalendar
 
       - name: Run ETL (OSM + sources + enrich)
         env:
@@ -66,6 +66,9 @@ jobs:
         env:
           BASE_URL: https://perwinroth.github.io/friluft
         run: python tools/build_site.py
+
+      - name: Generate events page
+        run: python tools/build_events.py
 
       - name: Prepare static site
         run: |

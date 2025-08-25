@@ -62,6 +62,16 @@ def place_html(place: Dict[str, Any], base_url: str, path: str) -> str:
         "geo": {"@type": "GeoCoordinates", "latitude": lat, "longitude": lon},
         "sameAs": [website] if website else [],
     }
+    # Breadcrumbs
+    breadcrumbs = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Hem", "item": f"{base_url}/web/"},
+            {"@type": "ListItem", "position": 2, "name": place.get('name'), "item": url},
+        ],
+    }
+
     return f"""<!doctype html>
 <html lang=\"sv\">
 <head>
@@ -77,6 +87,7 @@ def place_html(place: Dict[str, Any], base_url: str, path: str) -> str:
   <meta property=\"og:image\" content=\"{image}\" />
   <meta name=\"twitter:card\" content=\"summary_large_image\" />
   <script type=\"application/ld+json\">{json.dumps(ld, ensure_ascii=False)}</script>
+  <script type=\"application/ld+json\">{json.dumps(breadcrumbs, ensure_ascii=False)}</script>
   <link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap\" rel=\"stylesheet\">
   <style>
     body {{ font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin:0; padding:24px; line-height:1.5; }}
@@ -140,6 +151,7 @@ def generate() -> None:
     urls = [
         f"{base_url}/web/",
         f"{base_url}/web/list.html",
+        f"{base_url}/web/events/",
     ] + [f"{base_url}/web/places/{slugify(str(p.get('id') or p.get('name')))}.html" for p in places]
     parts = [
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
