@@ -30,16 +30,23 @@ export default function ResultsList({ query = '', cats = [] }: Props) {
 
   return (
     <div>
-      <div style={{color:'#666', margin:'8px 0'}}>{filtered.length} träffar</div>
-      <ul style={{listStyle:'none', padding:0}}>
+      <div style={{color:'#64748b', margin:'8px 0'}}>{filtered.length} träffar</div>
+      <ul style={{listStyle:'none', padding:0, margin:0}}>
         {filtered.map(it => (
-          <li key={it.id} style={{border:'1px solid #eee', borderRadius:10, padding:10, marginBottom:8}}>
-            <div style={{fontWeight:600}}>
-              <Link href={`/l/${slugify(it.id)}`}>{it.name}</Link>{' '}
-              {it.bookable ? <span style={{display:'inline-block', background:'#0f766e', color:'#fff', borderRadius:999, padding:'2px 8px', fontSize:12}}>Boka</span> : null}
+          <li key={it.id} className="card" style={{marginBottom:8}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:8}}>
+              <div style={{fontWeight:600}}>
+                <Link href={`/l/${slugify(it.id)}`}>{it.name}</Link>
+              </div>
+              {it.bookable ? <span className="badge" style={{background:'#0f766e', color:'#fff'}}>Boka</span> : null}
             </div>
-            <div style={{color:'#666', fontSize:12}}>{it.cats.join(', ')}</div>
-            {it.link ? <div><a href={it.link} target="_blank" rel="noopener">Länk</a></div> : null}
+            <div style={{color:'#64748b', fontSize:12, margin:'6px 0'}}>
+              {(it.cats||[]).map((c:string)=> (<span key={c} className="badge" style={{marginRight:6, background:'#eef2ff', color:'#3730a3'}}>{c}</span>))}
+            </div>
+            <div style={{display:'flex', gap:10, alignItems:'center'}}>
+              {it.link ? <a className="btn" href={it.link} target="_blank" rel="noopener">{it.bookable ? 'Boka' : 'Länk'}</a> : null}
+              <Link className="btn" href={`/l/${slugify(it.id)}`} style={{background:'#1f2937'}}>Detaljer</Link>
+            </div>
           </li>
         ))}
       </ul>
@@ -54,4 +61,3 @@ function slugify(s: string) {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'plats';
 }
-

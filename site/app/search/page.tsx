@@ -26,14 +26,14 @@ export default function SearchPage() {
         <span>🔍</span>
         <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Sök plats eller aktivitet" />
       </div>
-      <div style={{display:'flex', gap:8, flexWrap:'wrap', margin:'8px 0 12px'}}>
+      <div className="chips" style={{margin:'8px 0 12px'}}>
         {Object.keys(cats).map(k=> (
-          <button key={k} className="pill" onClick={()=> setCats(s=>({...s,[k]:!s[k]}))} style={{background: cats[k]?'#fff':'#f5f5f5'}}>{k}</button>
+          <button key={k} className="chip" onClick={()=> setCats(s=>({...s,[k]:!s[k]}))} style={{background: cats[k]?'#fff':'#f5f5f5'}}>{k}</button>
         ))}
       </div>
       <div className="grid">
-        <div className="card" style={{minHeight:'70vh'}}>
-          <LeafletMap query={query} cats={activeCats} />
+        <div className="card" style={{minHeight:'65vh'}}>
+          <LeafletMap query={query} cats={activeCats} height="58vh" />
         </div>
         <div className="card">
           <ResultsList query={query} cats={activeCats} />

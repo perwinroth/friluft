@@ -3,9 +3,9 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 
-type Props = { query?: string; cats?: string[] };
+type Props = { query?: string; cats?: string[]; height?: string };
 
-export default function Map({ query = '', cats = [] }: Props) {
+export default function Map({ query = '', cats = [], height = '60vh' }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletRef = useRef<L.Map | null>(null);
   const clusterRef = useRef<any>(null);
@@ -60,7 +60,7 @@ export default function Map({ query = '', cats = [] }: Props) {
       })
   },[query, cats.join(',')]);
 
-  return <div ref={mapRef} style={{height: '70vh', width: '100%'}} />
+  return <div ref={mapRef} style={{height, width: '100%', borderRadius: 12, overflow: 'hidden'}} />
 }
 
 function loadScript(src: string) {

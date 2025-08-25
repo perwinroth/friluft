@@ -14,6 +14,9 @@ from .util.enrich import enrich_places_opengraph
 from .util.dedupe import dedupe_places
 from .util.bookable import detect_booking_type
 from .sources.events_ical import fetch_events
+from .sources.ckan_search import fetch_ckan_places
+from .sources.municipal_list import fetch_municipal_list
+from .crawl.municipal_crawler import crawl_municipality
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / 'data'
@@ -62,8 +65,61 @@ def main() -> int:
     muni_activity = os.environ.get('MUNICIPAL_ACTIVITY', 'outdoor')
     muni_places = fetch_municipal_dataset(muni_url, muni_type, muni_activity) if muni_url else []
 
+    # 4) CKAN discovery across municipal portals (optional)
+    ckan_portals = os.environ.get('CKAN_PORTALS', '').strip()
+    ckan_keywords = os.environ.get('CKAN_KEYWORDS', '').strip()
+    ckan_activity_map = os.environ.get('CKAN_ACTIVITY_MAP', '').strip()
+    ckan_max = int(os.environ.get('CKAN_MAX_PER_KEYWORD', '2'))
+    ckan_places = []
+    if ckan_portals and ckan_keywords:
+        ckan_places = fetch_ckan_places(
+            ckan_portals, ckan_keywords, activity_map_json=ckan_activity_map, max_resources_per_keyword=ckan_max
+        )
+
     # Merge
-    places = osm_places + hav_places + muni_places
+    # 5) Extra direct dataset URLs (comma-separated), activity via EXTRA_ACTIVITY
+    extra_urls = [u.strip() for u in os.environ.get('EXTRA_DATASET_URLS', '').split(',') if u.strip()]
+    extra_activity = os.environ.get('EXTRA_ACTIVITY', 'outdoor')
+    extra_places: List[Dict[str, Any]] = []
+    if extra_urls:
+        for u in extra_urls:
+            kind = 'auto'
+            if u.lower().endswith('.csv'):
+                kind = 'csv'
+            elif u.lower().endswith('.json') or 'geojson' in u.lower():
+                kind = 'json'
+            try:
+                extra_places.extend(fetch_municipal_dataset(u, kind=kind, activity=extra_activity))
+            except Exception:
+                continue
+
+    # 6) Optional municipal crawling (respect robots, limited scope)
+    crawl_enabled = os.environ.get('ENABLE_MUNICIPAL_CRAWL', '0') == '1'
+    crawl_list_url = os.environ.get('MUNI_LIST_URL', '').strip()
+    crawl_sites = []
+    crawl_places: List[Dict[str, Any]] = []
+    if crawl_enabled:
+        muni_list = fetch_municipal_list(crawl_list_url) if crawl_list_url else []
+        # Fallback to a few known large municipalities if list not provided
+        if not muni_list:
+            muni_list = [
+                {'name': 'Stockholm', 'website': 'https://www.stockholm.se'},
+                {'name': 'Göteborg', 'website': 'https://www.goteborg.se'},
+                {'name': 'Malmö', 'website': 'https://malmo.se'},
+            ]
+        crawl_max_sites = int(os.environ.get('CRAWL_MAX_SITES', '5'))
+        crawl_max_pages = int(os.environ.get('CRAWL_MAX_PAGES', '25'))
+        crawl_max_depth = int(os.environ.get('CRAWL_MAX_DEPTH', '2'))
+        for m in muni_list[:crawl_max_sites]:
+            site = (m.get('website') or '').strip()
+            if site:
+                crawl_sites.append(site)
+                try:
+                    crawl_places.extend(crawl_municipality(site, max_pages=crawl_max_pages, max_depth=crawl_max_depth))
+                except Exception:
+                    continue
+
+    places = osm_places + hav_places + muni_places + ckan_places + extra_places + crawl_places
 
     # Dedupe
     places = dedupe_places(places)
@@ -109,7 +165,14 @@ def main() -> int:
         events = fetch_events(urls)
         (DATA_DIR / 'events.json').write_text(json.dumps(events, ensure_ascii=False), encoding='utf-8')
 
-    print(f'OSM: {len(osm_places)}  HAV: {len(hav_places)}  Muni: {len(muni_places)}  Total (deduped): {len(places)}  Events: {len(events)}')
+    print(
+        'OSM:', len(osm_places),
+        'HAV:', len(hav_places),
+        'Muni:', len(muni_places),
+        'CKAN:', len(ckan_places),
+        'Extra:', len(extra_places), 'Crawl:', len(crawl_places), 'Total (deduped):', len(places),
+        'Events:', len(events)
+    )
     return 0
 
 

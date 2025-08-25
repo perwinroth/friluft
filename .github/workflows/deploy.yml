@@ -41,6 +41,23 @@ jobs:
           MUNICIPAL_DATASET_URL: ""
           MUNICIPAL_DATASET_TYPE: auto
           MUNICIPAL_ACTIVITY: outdoor
+          # CKAN discovery across municipal portals (comma-separated list)
+          CKAN_PORTALS: ""
+          # Keywords to search for datasets, comma-separated (e.g., utegym,badplats,motionsspår)
+          CKAN_KEYWORDS: ""
+          # JSON mapping keyword -> activity (e.g., {"utegym":"gym","badplats":"swimming"})
+          CKAN_ACTIVITY_MAP: ""
+          # Max resources per keyword per portal to ingest
+          CKAN_MAX_PER_KEYWORD: "2"
+          # Extra direct dataset URLs (CSV/JSON/GeoJSON), comma-separated
+          EXTRA_DATASET_URLS: ""
+          EXTRA_ACTIVITY: outdoor
+          # Optional municipal crawl (respect robots, limited)
+          ENABLE_MUNICIPAL_CRAWL: "0"
+          MUNI_LIST_URL: ""
+          CRAWL_MAX_SITES: "5"
+          CRAWL_MAX_PAGES: "20"
+          CRAWL_MAX_DEPTH: "2"
           ENRICH_MAX: "150"
         run: |
           set -e
