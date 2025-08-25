@@ -53,8 +53,8 @@ jobs:
           EXTRA_DATASET_URLS: ""
           EXTRA_ACTIVITY: outdoor
           # Optional municipal crawl (respect robots, limited)
-          ENABLE_MUNICIPAL_CRAWL: "0"
-          MUNI_LIST_URL: ""
+          ENABLE_MUNICIPAL_CRAWL: "1"
+          MUNI_LIST_URL: "data/municipalities.csv"
           CRAWL_MAX_SITES: "5"
           CRAWL_MAX_PAGES: "20"
           CRAWL_MAX_DEPTH: "2"

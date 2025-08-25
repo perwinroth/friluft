@@ -13,6 +13,7 @@ from .sources.municipal_generic import fetch_municipal_dataset
 from .util.enrich import enrich_places_opengraph
 from .util.dedupe import dedupe_places
 from .util.bookable import detect_booking_type
+from .util.normalize import ensure_name
 from .sources.events_ical import fetch_events
 from .sources.ckan_search import fetch_ckan_places
 from .sources.municipal_list import fetch_municipal_list
@@ -134,6 +135,10 @@ def main() -> int:
         if bt:
             p['bookable'] = True
             p['bookingType'] = bt
+
+    # Ensure all places have a better-than-default name
+    for p in places:
+        ensure_name(p)
 
     # Write combined JSON and GeoJSON for the map
     (DATA_DIR / 'places.json').write_text(json.dumps(places, ensure_ascii=False), encoding='utf-8')

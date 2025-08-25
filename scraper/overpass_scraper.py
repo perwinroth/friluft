@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 from typing import Dict, List, Tuple, Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -111,7 +112,9 @@ def to_feature(el: Dict[str, Any], categories: List[str]) -> Dict[str, Any]:
 
     props = {
         "id": f"{el['type']}/{el['id']}",
-        "name": name,
+        "name": name if name and name != "(namnlös)" else (
+            (categories[0].replace('_', ' ').title() + f" – {hostname(website)}") if categories else hostname(website) or "(namnlös)"
+        ),
         "categories": sorted(set(categories)),
         "link": website,
         "osm_url": fallback_link,
@@ -201,6 +204,15 @@ def main(argv: List[str]) -> int:
     print(f"Wrote {args.out}")
     return 0
 
+
+def hostname(url: str) -> str:
+    try:
+        host = urlparse(url).netloc
+        if host.startswith("www."):
+            host = host[4:]
+        return host
+    except Exception:
+        return ""
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))

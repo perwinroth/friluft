@@ -3,6 +3,7 @@ import csv
 import io
 import json
 import requests
+from pathlib import Path
 
 
 def fetch_municipal_list(url: str) -> List[Dict[str, Any]]:
@@ -14,12 +15,26 @@ def fetch_municipal_list(url: str) -> List[Dict[str, Any]]:
     """
     if not url:
         return []
-    try:
-        r = requests.get(url, timeout=30)
-        r.raise_for_status()
-        content = r.content
-    except Exception:
-        return []
+    content: bytes
+    # Support local file paths in repo or file:// URLs
+    if url.startswith('file://'):
+        try:
+            content = Path(url[7:]).read_bytes()
+        except Exception:
+            return []
+    elif url.startswith('http://') or url.startswith('https://'):
+        try:
+            r = requests.get(url, timeout=30)
+            r.raise_for_status()
+            content = r.content
+        except Exception:
+            return []
+    else:
+        # Treat as relative/absolute file path
+        try:
+            content = Path(url).read_bytes()
+        except Exception:
+            return []
 
     # Try JSON first
     try:
@@ -46,4 +61,3 @@ def fetch_municipal_list(url: str) -> List[Dict[str, Any]]:
         return out
     except Exception:
         return []
-
