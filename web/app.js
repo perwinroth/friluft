@@ -22,6 +22,23 @@ const CATEGORY_LABELS = {
   boat_rental: 'Båt/Kanot-uthyrning',
 };
 
+function iconFor(cat, size=12) {
+  const map = {
+    national_park: 'hiking',
+    nature_reserve: 'hiking',
+    camp_site: 'camp_site',
+    shelter: 'shelter',
+    viewpoint: 'viewpoint',
+    picnic_site: 'picnic_site',
+    slipway: 'slipway',
+    canoe_kayak: 'canoe_kayak',
+    boat_rental: 'boat_rental',
+  };
+  const key = map[cat] || 'hiking';
+  const src = `../site/public/icons/${key}.svg`;
+  return `<img src="${src}" alt="" width="${size}" height="${size}" style="vertical-align:middle; margin-right:6px"/>`;
+}
+
 // State
 let ACTIVE_CATS = new Set(Object.keys(CATEGORY_COLORS));
 let ITEMS = new Map(); // id -> {id, name, link, cats, lat, lng}
@@ -106,9 +123,10 @@ function popupHtml(props) {
   const cats = (props.categories || []).map((c) => CATEGORY_LABELS[c] || c).join(', ');
   const book = props.bookable ? ' • Bokningsbar' : '';
   const safeLink = link ? `<a href="${link}" target="_blank" rel="noopener">${props.bookable ? 'Boka' : 'Länk'}</a>` : '';
+  const icon = (props.categories && props.categories[0]) ? iconFor(props.categories[0], 14) : '';
   return `
     <div class="popup">
-      <strong>${name}</strong><br/>
+      <strong>${icon}${name}</strong><br/>
       <small>${cats}${book}</small><br/>
       ${safeLink}
     </div>
@@ -196,12 +214,12 @@ function renderList() {
     const nameHtml = q ? highlightName(it.name, q) : escapeHTML(it.name);
     const badges = it.cats
       .filter((c) => active.has(c))
-      .map((c) => `<span class="badge" style="background:${CATEGORY_COLORS[c]}">${CATEGORY_LABELS[c] || c}</span>`)
+      .map((c) => `<span class="badge" style="background:${CATEGORY_COLORS[c]};display:inline-flex;align-items:center;gap:6px">${iconFor(c,12)}${CATEGORY_LABELS[c] || c}</span>`)
       .join(' ');
     const safeLink = it.link ? `<a href="${it.link}" target="_blank" rel="noopener">Länk</a>` : '';
     html.push(`
       <div class="list-item" data-id="${it.id}">
-        <div class="name"><a href="places/${slug}.html">${nameHtml}</a> ${it.bookable ? '<span class="badge" style="background:#0f766e">Boka</span>' : ''}</div>
+        <div class="name">${it.cats && it.cats[0] ? iconFor(it.cats[0],14) : ''}<a href="places/${slug}.html">${nameHtml}</a> ${it.bookable ? '<span class="badge" style="background:#0f766e">Boka</span>' : ''}</div>
         <div class="meta">${badges} ${safeLink}</div>
       </div>
     `);

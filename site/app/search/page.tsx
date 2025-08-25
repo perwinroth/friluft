@@ -29,6 +29,9 @@ export default function SearchPage() {
 
   return (
     <div className="container">
+      <head>
+        <link rel="canonical" href="https://perwinroth.github.io/friluft/web/" />
+      </head>
       <div className="pill" style={{position:'sticky', top:8, zIndex:10}}>
         <span>🔍</span>
         <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Sök plats eller aktivitet" />

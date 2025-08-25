@@ -60,6 +60,12 @@ export default async function ListingPage({ params }: { params: { slug: string }
             src={`https://www.openstreetmap.org/export/embed.html?marker=${lat}%2C${lon}&layer=mapnik`} />
         </div>
       </div>
+      {/* Mobile sticky CTA */}
+      {website ? (
+        <div className="sticky-cta" role="region" aria-label="Snabbåtgärder">
+          <a className="btn" href={website} target="_blank" rel="noopener" style={{display:'block', textAlign:'center'}}>Boka / Mer info</a>
+        </div>
+      ) : null}
     </div>
   );
 }

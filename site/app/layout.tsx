@@ -30,6 +30,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; }
           .chips { display:flex; gap:8px; flex-wrap:wrap; }
           .chip { border:1px solid var(--border); border-radius:999px; padding:6px 10px; background:#fff; cursor:pointer; }
+          /* Mobile sticky CTA */
+          .sticky-cta { position:fixed; left:0; right:0; bottom:0; background:rgba(255,255,255,0.96); border-top:1px solid var(--border); padding:10px 16px; display:none; }
+          @media (max-width: 768px) { .sticky-cta { display:block; } }
         `}</style>
       </head>
       <body>
@@ -43,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </nav>
         </header>
         {children}
+        {/* Placeholder for global mobile actions if needed */}
       </body>
     </html>
   );

@@ -3,6 +3,9 @@ import Link from 'next/link'
 export default function HomePage() {
   return (
     <div className="container">
+      <head>
+        <link rel="canonical" href="https://perwinroth.github.io/friluft/web/" />
+      </head>
       <h1>Friluft</h1>
       <p>Upptäck och boka friluftsupplevelser i Sverige.</p>
       <div className="card" style={{marginTop:12}}>
