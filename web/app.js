@@ -1,0 +1,274 @@
+const CATEGORY_COLORS = {
+  national_park: '#2ca25f',
+  nature_reserve: '#99d8c9',
+  camp_site: '#fb6a4a',
+  shelter: '#ef3b2c',
+  viewpoint: '#8856a7',
+  picnic_site: '#9ebcda',
+  slipway: '#3182bd',
+  canoe_kayak: '#41b6c4',
+  boat_rental: '#0868ac',
+};
+
+const CATEGORY_LABELS = {
+  national_park: 'Nationalpark',
+  nature_reserve: 'Naturreservat',
+  camp_site: 'Camping',
+  shelter: 'Vindskydd / Shelter',
+  viewpoint: 'Utsiktsplats',
+  picnic_site: 'Picknick',
+  slipway: 'Båtramp / Slip',
+  canoe_kayak: 'Kanot / Kajak',
+  boat_rental: 'Båt/Kanot-uthyrning',
+};
+
+// State
+let ACTIVE_CATS = new Set(Object.keys(CATEGORY_COLORS));
+let ITEMS = new Map(); // id -> {id, name, link, cats, lat, lng}
+let MARKER_BY_ID = new Map(); // id -> marker
+let THE_MAP = null;
+let CLUSTER = null; // marker cluster group
+let ALL_MARKERS = []; // markers for all items
+let SEARCH_QUERY = '';
+
+function initMap() {
+  const map = L.map('map').setView([62.0, 15.0], 5); // Sweden
+  THE_MAP = map;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18,
+  }).addTo(map);
+
+  // Cluster group for all markers
+  CLUSTER = L.markerClusterGroup({
+    disableClusteringAtZoom: 14,
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 50,
+  });
+  map.addLayer(CLUSTER);
+
+  buildFilters(map);
+  buildChips();
+  buildSearch();
+  loadData(map);
+}
+
+function buildFilters(map) {
+  const container = document.getElementById('filters');
+  container.innerHTML = '';
+  Object.entries(CATEGORY_LABELS).forEach(([key, label]) => {
+    const id = `filter-${key}`;
+    const wrap = document.createElement('div');
+    wrap.className = 'filter-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = id;
+    checkbox.checked = true;
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) ACTIVE_CATS.add(key);
+      else ACTIVE_CATS.delete(key);
+      applyFilter();
+      renderList();
+    });
+
+    const color = document.createElement('span');
+    color.className = 'color';
+    color.style.backgroundColor = CATEGORY_COLORS[key];
+
+    const labelEl = document.createElement('label');
+    labelEl.htmlFor = id;
+    labelEl.textContent = label;
+
+    wrap.appendChild(checkbox);
+    wrap.appendChild(color);
+    wrap.appendChild(labelEl);
+    container.appendChild(wrap);
+  });
+}
+
+function markerFor(cats, feature, latLng) {
+  const cat = (cats && cats[0]) || 'other';
+  const color = CATEGORY_COLORS[cat] || '#444';
+  const icon = L.divIcon({
+    className: 'dot',
+    html: `<span style="background:${color}"></span>`,
+    iconSize: [12, 12],
+  });
+  return L.marker(latLng, { icon });
+}
+
+function popupHtml(props) {
+  const name = props.name || '(namnlös)';
+  const link = props.link || props.osm_url;
+  const cats = (props.categories || []).map((c) => CATEGORY_LABELS[c] || c).join(', ');
+  const safeLink = link ? `<a href="${link}" target="_blank" rel="noopener">Länk</a>` : '';
+  return `
+    <div class="popup">
+      <strong>${name}</strong><br/>
+      <small>${cats}</small><br/>
+      ${safeLink}
+    </div>
+  `;
+}
+
+async function loadData(map) {
+  try {
+    const res = await fetch('../data/friluft.geojson');
+    const geo = await res.json();
+    buildItems(geo);
+    renderData(map, geo);
+    applyFilter();
+    renderList();
+  } catch (e) {
+    console.error('Failed to load data', e);
+    const el = document.createElement('div');
+    el.className = 'error';
+    el.textContent = 'Kunde inte ladda data. Har du kört skripten?';
+    document.getElementById('controls').appendChild(el);
+  }
+}
+
+function renderData(map, geo) {
+  ALL_MARKERS = [];
+  MARKER_BY_ID = new Map();
+  (geo.features || []).forEach((f) => {
+    const [lng, lat] = f.geometry.coordinates;
+    const props = f.properties || {};
+    const cats = props.categories || [];
+    const m = markerFor(cats, f, [lat, lng]).bindPopup(popupHtml(props));
+    m.__cats = new Set(cats);
+    m.__id = props.id;
+    m.__name = (props.name || '').toLowerCase();
+    ALL_MARKERS.push(m);
+    MARKER_BY_ID.set(props.id, m);
+  });
+}
+
+function applyFilter() {
+  if (!CLUSTER) return;
+  CLUSTER.clearLayers();
+  const filtered = ALL_MARKERS.filter((m) => {
+    let catOK = false;
+    for (const c of m.__cats) if (ACTIVE_CATS.has(c)) { catOK = true; break; }
+    if (!catOK) return false;
+    if (!SEARCH_QUERY) return true;
+    return m.__name && m.__name.includes(SEARCH_QUERY);
+  });
+  CLUSTER.addLayers(filtered);
+}
+
+document.addEventListener('DOMContentLoaded', initMap);
+
+function buildItems(geo) {
+  ITEMS = new Map();
+  (geo.features || []).forEach((f) => {
+    const [lng, lat] = f.geometry.coordinates;
+    const p = f.properties || {};
+    ITEMS.set(p.id, {
+      id: p.id,
+      name: p.name || '(namnlös)'
+        , link: p.link || p.osm_url,
+      cats: p.categories || [],
+      lat, lng,
+    });
+  });
+}
+
+function renderList() {
+  const listEl = document.getElementById('list');
+  if (!listEl) return;
+  const active = ACTIVE_CATS;
+  const q = SEARCH_QUERY;
+  const items = Array.from(ITEMS.values()).filter((it) =>
+    it.cats.some((c) => active.has(c)) && (!q || (it.name || '').toLowerCase().includes(q))
+  );
+  items.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+  const html = [
+    `<div class="meta" style="padding:4px 8px; color:#666;">${items.length} platser</div>`
+  ];
+  items.forEach((it) => {
+    const badges = it.cats
+      .filter((c) => active.has(c))
+      .map((c) => `<span class="badge" style="background:${CATEGORY_COLORS[c]}">${CATEGORY_LABELS[c] || c}</span>`)
+      .join(' ');
+    const safeLink = it.link ? `<a href="${it.link}" target="_blank" rel="noopener">Länk</a>` : '';
+    html.push(`
+      <div class="list-item" data-id="${it.id}">
+        <div class="name">${it.name}</div>
+        <div class="meta">${badges} ${safeLink}</div>
+      </div>
+    `);
+  });
+  listEl.innerHTML = html.join('\n');
+
+  listEl.querySelectorAll('.list-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-id');
+      const it = ITEMS.get(id);
+      if (!it) return;
+      THE_MAP.setView([it.lat, it.lng], Math.max(12, THE_MAP.getZoom()));
+      const m = MARKER_BY_ID.get(id);
+      if (m && CLUSTER) {
+        CLUSTER.zoomToShowLayer(m, () => m.openPopup());
+      } else if (m) {
+        m.openPopup();
+      }
+    });
+  });
+}
+
+// Category chips in the search area
+function setCatActive(cat, active) {
+  if (active) ACTIVE_CATS.add(cat); else ACTIVE_CATS.delete(cat);
+  // Sync checkbox if present
+  const cb = document.getElementById(`filter-${cat}`);
+  if (cb) cb.checked = ACTIVE_CATS.has(cat);
+  // Sync chip active state
+  const chip = document.querySelector(`.chip[data-cat="${cat}"]`);
+  if (chip) chip.classList.toggle('active', ACTIVE_CATS.has(cat));
+}
+
+function buildChips() {
+  const el = document.getElementById('chips');
+  if (!el) return;
+  el.innerHTML = '';
+  Object.entries(CATEGORY_LABELS).forEach(([key, label]) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.dataset.cat = key;
+    chip.classList.toggle('active', ACTIVE_CATS.has(key));
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.backgroundColor = CATEGORY_COLORS[key];
+    const text = document.createElement('span');
+    text.textContent = label;
+    chip.appendChild(dot);
+    chip.appendChild(text);
+    chip.addEventListener('click', () => {
+      const willActivate = !ACTIVE_CATS.has(key);
+      setCatActive(key, willActivate);
+      applyFilter();
+      renderList();
+    });
+    el.appendChild(chip);
+  });
+}
+
+// Search UI
+function debounce(fn, ms) {
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function buildSearch() {
+  const input = document.getElementById('searchInput');
+  if (!input) return;
+  const onChange = debounce(() => {
+    SEARCH_QUERY = (input.value || '').trim().toLowerCase();
+    applyFilter();
+    renderList();
+  }, 150);
+  input.addEventListener('input', onChange);
+}

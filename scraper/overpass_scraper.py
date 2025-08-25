@@ -1,0 +1,206 @@
+import argparse
+import json
+import sys
+from typing import Dict, List, Tuple, Any
+
+import requests
+
+
+DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter"
+
+
+# Category definitions with Overpass tag selectors.
+# Each entry is a list of tag expressions to match; we will query node/way/relation for each.
+CATEGORY_DEFS: Dict[str, List[str]] = {
+    # Hiking / protected nature
+    "national_park": [
+        '["boundary"="national_park"]',
+    ],
+    "nature_reserve": [
+        '["boundary"="protected_area"]["protect_class"~"^(4|5|6)$"]',
+        '["leisure"="nature_reserve"]',
+    ],
+    # Outdoor stay
+    "camp_site": [
+        '["tourism"="camp_site"]',
+    ],
+    "shelter": [
+        '["amenity"="shelter"]',  # often wind shelters/vindskydd
+    ],
+    "viewpoint": [
+        '["tourism"="viewpoint"]',
+    ],
+    "picnic_site": [
+        '["tourism"="picnic_site"]',
+        '["amenity"="picnic_table"]',
+    ],
+    # Paddling
+    "slipway": [
+        '["leisure"="slipway"]',
+    ],
+    "canoe_kayak": [
+        '["sport"~"^(canoe|kayak)$"]',
+        '["canoe"~"^(yes|designated)$"]',
+    ],
+    "boat_rental": [
+        '["amenity"="boat_rental"]',
+        '["shop"="boat_rental"]',
+    ],
+}
+
+
+def build_category_query(area_alias: str, tag_expr: str) -> str:
+    """Return an Overpass QL snippet that fetches node/way/relation with tag_expr in the given area.
+
+    Example tag_expr: '["tourism"="camp_site"]'
+    """
+    return (
+        f"node{tag_expr}(area.{area_alias});\n"
+        f"way{tag_expr}(area.{area_alias});\n"
+        f"relation{tag_expr}(area.{area_alias});\n"
+    )
+
+
+def run_overpass(endpoint: str, ql: str) -> Dict[str, Any]:
+    resp = requests.post(endpoint, data={"data": ql}, timeout=180)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def choose_name(tags: Dict[str, str]) -> str:
+    for k in ("name:sv", "name", "name:en", "ref"):
+        v = tags.get(k)
+        if v:
+            return v
+    return "(namnlös)"
+
+
+def choose_website(tags: Dict[str, str]) -> str:
+    for k in ("website", "contact:website", "url"):
+        v = tags.get(k)
+        if v:
+            if v.startswith("http://") or v.startswith("https://"):
+                return v
+            return "https://" + v
+    return ""
+
+
+def osm_url(el: Dict[str, Any]) -> str:
+    return f"https://www.openstreetmap.org/{el['type']}/{el['id']}"
+
+
+def to_feature(el: Dict[str, Any], categories: List[str]) -> Dict[str, Any]:
+    tags = el.get("tags", {})
+    website = choose_website(tags)
+    if not website:
+        # Only keep features that have an explicit website/contact URL
+        raise ValueError("Missing website link")
+    # Coordinates
+    if el.get("type") == "node":
+        lat = el.get("lat")
+        lon = el.get("lon")
+    else:
+        center = el.get("center") or {}
+        lat = center.get("lat")
+        lon = center.get("lon")
+    if lat is None or lon is None:
+        raise ValueError("Missing coordinates")
+
+    name = choose_name(tags)
+    fallback_link = osm_url(el)
+
+    props = {
+        "id": f"{el['type']}/{el['id']}",
+        "name": name,
+        "categories": sorted(set(categories)),
+        "link": website,
+        "osm_url": fallback_link,
+        "tags": tags,
+    }
+    return {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [lon, lat]},
+        "properties": props,
+    }
+
+
+def build_master_query(categories: List[str]) -> List[Tuple[str, str]]:
+    # Build a list of (category, query) pairs
+    pairs: List[Tuple[str, str]] = []
+    for cat in categories:
+        exprs = CATEGORY_DEFS.get(cat, [])
+        if not exprs:
+            continue
+        combined = "".join(build_category_query("a", e) for e in exprs)
+        ql = (
+            "[out:json][timeout:180];\n"
+            "area[\"ISO3166-1\"=\"SE\"][admin_level=2]->.a;\n"
+            "(\n" + combined + ")\n"
+            ";\nout tags center;\n"
+        )
+        pairs.append((cat, ql))
+    return pairs
+
+
+def scrape(endpoint: str, categories: List[str]) -> List[Dict[str, Any]]:
+    # Accumulate elements and their categories by (type, id)
+    elements: Dict[Tuple[str, int], Dict[str, Any]] = {}
+    el_cats: Dict[Tuple[str, int], List[str]] = {}
+
+    for cat, ql in build_master_query(categories):
+        data = run_overpass(endpoint, ql)
+        for el in data.get("elements", []):
+            key = (el.get("type"), el.get("id"))
+            if key not in elements:
+                elements[key] = el
+                el_cats[key] = []
+            el_cats[key].append(cat)
+
+    # Convert to GeoJSON features
+    features: List[Dict[str, Any]] = []
+    for key, el in elements.items():
+        cats = el_cats.get(key, [])
+        try:
+            feat = to_feature(el, cats)
+            features.append(feat)
+        except Exception:
+            # Skip elements without usable coordinates
+            continue
+    return features
+
+
+def write_geojson(features: List[Dict[str, Any]], out_path: str) -> None:
+    fc = {"type": "FeatureCollection", "features": features}
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(fc, f, ensure_ascii=False)
+
+
+def main(argv: List[str]) -> int:
+    parser = argparse.ArgumentParser(description="Scrape Swedish friluftsliv POIs from OSM via Overpass")
+    parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT, help="Overpass API endpoint")
+    parser.add_argument(
+        "--categories",
+        default=",".join(CATEGORY_DEFS.keys()),
+        help="Comma-separated categories to include",
+    )
+    parser.add_argument("--out", default="data/friluft.geojson", help="Output GeoJSON path")
+    args = parser.parse_args(argv)
+
+    cats = [c.strip() for c in args.categories.split(",") if c.strip()]
+    # Validate categories
+    unknown = [c for c in cats if c not in CATEGORY_DEFS]
+    if unknown:
+        print(f"Unknown categories: {', '.join(unknown)}", file=sys.stderr)
+        print("Known:", ", ".join(CATEGORY_DEFS.keys()), file=sys.stderr)
+        return 2
+
+    print(f"Fetching categories: {', '.join(cats)}")
+    features = scrape(args.endpoint, cats)
+    print(f"Fetched features: {len(features)}")
+    write_geojson(features, args.out)
+    print(f"Wrote {args.out}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

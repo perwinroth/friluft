@@ -1,0 +1,84 @@
+name: Deploy GitHub Pages (scrape + build)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1' # Every Monday 03:00 UTC
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Scrape data (website-only)
+        working-directory: friluft
+        run: |
+          set -e
+          for i in 1 2 3; do
+            python scraper/overpass_scraper.py --endpoint https://overpass.kumi.systems/api/interpreter --out data/friluft.geojson && break || sleep 20
+          done
+
+      - name: Validate GeoJSON
+        working-directory: friluft
+        run: |
+          python - <<'PY'
+          import json, sys
+          with open('data/friluft.geojson','r',encoding='utf-8') as f:
+              d=json.load(f)
+          feats=d.get('features',[])
+          if not feats:
+              print('No features scraped', file=sys.stderr)
+              sys.exit(1)
+          print(f'Features: {len(feats)}')
+          PY
+
+      - name: Generate standalone list page
+        working-directory: friluft
+        run: python tools/build_list.py
+
+      - name: Prepare static site
+        working-directory: friluft
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          cp -r web dist/web
+          cp -r data dist/data
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: friluft/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
