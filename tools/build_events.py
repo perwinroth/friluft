@@ -33,6 +33,15 @@ def build():
         items.append(ld)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    # Build HTML list separately to avoid f-string backslash issues
+    list_parts = []
+    for ev in events:
+        url = ev.get('registrationUrl') or ''
+        link_html = f'<a class="btn" href="{url}" target="_blank" rel="noopener">Anmälan</a>' if url else ''
+        list_parts.append(
+            f"<li><strong>{ev.get('name')}</strong><br/><small>{ev.get('date')} – {ev.get('location')}</small><br/>{link_html}</li>"
+        )
+
     html = f"""<!doctype html>
 <html lang=\"sv\">
 <head>
@@ -63,7 +72,7 @@ def build():
     <p><a href=\"../\">← Till kartan</a></p>
     <h1>Evenemang</h1>
     <ul>
-      {''.join([f"<li><strong>{ev.get('name')}</strong><br/><small>{ev.get('date')} – {ev.get('location')}</small><br/>{('<a class=\\"btn\\" href=\\"'+(ev.get('registrationUrl') or '')+'\\" target=\\"_blank\\" rel=\\"noopener\\">Anmälan</a>') if ev.get('registrationUrl') else ''}</li>" for ev in events])}
+      {''.join(list_parts)}
     </ul>
   </div>
 </body>
@@ -74,4 +83,3 @@ def build():
 
 if __name__ == '__main__':
     build()
-
