@@ -10,13 +10,14 @@ html, body {
   position: sticky;
   top: 0;
   z-index: 1200;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: saturate(180%) blur(8px);
-  border-bottom: 1px solid #e5e7eb;
+  background: #0f766e;
+  color: #fff;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
 }
-.nav { display:flex; align-items:center; gap:14px; padding:10px 16px; }
-.brand { font-weight: 700; letter-spacing: .2px; color:#0f172a; text-decoration: none; }
-.nav a { color:#0f172a; text-decoration: none; }
+.nav { display:flex; align-items:center; gap:14px; padding:10px 16px; max-width:1200px; margin:0 auto; }
+.brand { font-weight: 700; letter-spacing: .2px; color:#fff; text-decoration: none; }
+.nav a { color:#fff; text-decoration: none; opacity: 0.95; }
+.nav a:hover { opacity: 1; }
 .spacer { flex: 1; }
 
 /* Floating search bar (Airbnb-like pill) */

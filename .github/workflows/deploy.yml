@@ -33,6 +33,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 lxml icalendar
 
+      - name: Fetch municipalities from Wikidata
+        run: |
+          python tools/fetch_municipalities_wikidata.py || true
+
       - name: Run ETL (OSM + sources + enrich)
         env:
           OVERPASS_ENDPOINT: https://overpass.kumi.systems/api/interpreter
