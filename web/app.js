@@ -201,12 +201,17 @@ function renderList() {
   if (!listEl) return;
   const active = ACTIVE_CATS;
   const q = SEARCH_QUERY;
-  const items = Array.from(ITEMS.values()).filter((it) =>
+  let items = Array.from(ITEMS.values()).filter((it) =>
     it.cats.some((c) => active.has(c)) && (!q || (it.name || '').toLowerCase().includes(q))
   );
-  items.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+  if (USER_POS) {
+    items.forEach((it) => { it._dist = distanceKm(USER_POS.lat, USER_POS.lon, it.lat, it.lng); });
+    items.sort((a, b) => (a._dist || Infinity) - (b._dist || Infinity));
+  } else {
+    items.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
+  }
   const html = [
-    `<div class="meta" style="padding:4px 8px; color:#666;">${items.length} platser</div>`
+    `<div class="meta" style="padding:4px 8px; color:#666;">${items.length} platser${USER_POS ? ' – sorterat efter avstånd' : ''}</div>`
   ];
   items.forEach((it) => {
     const slug = slugify(it.id);
@@ -217,9 +222,10 @@ function renderList() {
       .map((c) => `<span class="badge" style="background:${CATEGORY_COLORS[c]};display:inline-flex;align-items:center;gap:6px">${iconFor(c,12)}${CATEGORY_LABELS[c] || c}</span>`)
       .join(' ');
     const safeLink = it.link ? `<a href="${it.link}" target="_blank" rel="noopener">Länk</a>` : '';
+    const dist = (USER_POS && typeof it._dist === 'number') ? ` <small style="color:#64748b">${it._dist.toFixed(1)} km</small>` : '';
     html.push(`
       <div class="list-item" data-id="${it.id}">
-        <div class="name">${it.cats && it.cats[0] ? iconFor(it.cats[0],14) : ''}<a href="places/${slug}.html">${nameHtml}</a> ${it.bookable ? '<span class="badge" style="background:#0f766e">Boka</span>' : ''}</div>
+        <div class="name">${it.cats && it.cats[0] ? iconFor(it.cats[0],14) : ''}<a href="places/${slug}.html">${nameHtml}</a>${dist} ${it.bookable ? '<span class="badge" style="background:#0f766e">Boka</span>' : ''}</div>
         <div class="meta">${badges} ${safeLink}</div>
       </div>
     `);

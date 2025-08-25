@@ -69,6 +69,15 @@ html, body {
 .clear-btn:hover { background: #eee; }
 .clear-btn[hidden] { display: none; }
 
+.nearby-btn {
+  border: none;
+  background: #e5f3f1;
+  border-radius: 999px;
+  padding: 6px;
+  cursor: pointer;
+}
+.nearby-btn:hover { background: #d8eeea; }
+
 .chips {
   pointer-events: all;
   margin-top: 10px;
