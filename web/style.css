@@ -169,7 +169,11 @@ html, body {
 /* Map shifted to the right of sidebar */
 #map {
   position: absolute;
-  top: 0; left: 320px; right: 0; bottom: 0;
+  /* Inset the map to create breathing room */
+  top: 12px; left: 332px; right: 12px; bottom: 12px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  overflow: hidden;
 }
 
 .dot span {
@@ -189,5 +193,14 @@ html, body {
   margin-top: 8px;
   color: #b00020;
 }
+
+/* Improve filter item readability */
+.filter-item label {
+  font-size: 13px;
+  color: #1f2937;
+}
+
+/* Popup text tweaks */
+.popup strong { display: inline-flex; align-items: center; gap: 6px; }
 
 .hl { background: #fff1f3; padding: 0 2px; border-radius: 3px; }

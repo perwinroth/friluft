@@ -35,7 +35,7 @@ function iconFor(cat, size=12) {
     boat_rental: 'boat_rental',
   };
   const key = map[cat] || 'hiking';
-  const src = `../site/public/icons/${key}.svg`;
+  const src = `icons/${key}.svg`;
   return `<img src="${src}" alt="" width="${size}" height="${size}" style="vertical-align:middle; margin-right:6px"/>`;
 }
 
