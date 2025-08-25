@@ -42,11 +42,11 @@ jobs:
           MUNICIPAL_DATASET_TYPE: auto
           MUNICIPAL_ACTIVITY: outdoor
           # CKAN discovery across municipal portals (comma-separated list)
-          CKAN_PORTALS: ""
-          # Keywords to search for datasets, comma-separated (e.g., utegym,badplats,motionsspår)
-          CKAN_KEYWORDS: ""
-          # JSON mapping keyword -> activity (e.g., {"utegym":"gym","badplats":"swimming"})
-          CKAN_ACTIVITY_MAP: ""
+          CKAN_PORTALS: "" # add portals as available (e.g., https://data.goteborg.se if CKAN)
+          # Keywords to search for datasets, comma-separated
+          CKAN_KEYWORDS: "utegym,badplats,motionsspår,elljusspår,leder,vandring"
+          # JSON mapping keyword -> activity
+          CKAN_ACTIVITY_MAP: '{"utegym":"gym","badplats":"swimming","motionsspår":"running","elljusspår":"running","leder":"hiking","vandring":"hiking"}'
           # Max resources per keyword per portal to ingest
           CKAN_MAX_PER_KEYWORD: "2"
           # Extra direct dataset URLs (CSV/JSON/GeoJSON), comma-separated

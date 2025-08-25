@@ -46,6 +46,7 @@ export default function ResultsList({ query = '', cats = [] }: Props) {
             <div style={{display:'flex', gap:10, alignItems:'center'}}>
               {it.link ? <a className="btn" href={it.link} target="_blank" rel="noopener">{it.bookable ? 'Boka' : 'Länk'}</a> : null}
               <Link className="btn" href={`/l/${slugify(it.id)}`} style={{background:'#1f2937'}}>Detaljer</Link>
+              <button className="btn" style={{background:'#334155'}} onClick={()=>focusOnMap(it.lat, it.lon)}>Visa på karta</button>
             </div>
           </li>
         ))}
@@ -60,4 +61,12 @@ function slugify(s: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'plats';
+}
+
+function focusOnMap(lat?: number, lon?: number) {
+  if (lat == null || lon == null) return;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('friluft:focus', { detail: { lat, lon, zoom: 13 } }))
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 }

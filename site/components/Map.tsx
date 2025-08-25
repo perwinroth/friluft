@@ -32,6 +32,17 @@ export default function Map({ query = '', cats = [], height = '60vh' }: Props) {
       map.addLayer(cluster);
     };
     ensureCluster();
+    // Listen to focus events
+    const handler = (e: any) => {
+      const d = e.detail || {}; const { lat, lon, zoom } = d;
+      if (typeof lat === 'number' && typeof lon === 'number') {
+        map.setView([lat, lon], zoom || Math.max(map.getZoom(), 12));
+      }
+    };
+    window.addEventListener('friluft:focus', handler);
+    return () => {
+      window.removeEventListener('friluft:focus', handler);
+    };
   },[]);
 
   useEffect(()=>{

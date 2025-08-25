@@ -42,13 +42,18 @@ export default async function ListingPage({ params }: { params: { slug: string }
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(breadcrumbs)}} />
       </head>
-      <p><a href="/search">← Till sök</a></p>
-      <h1>{match.name}</h1>
+      <p><a href="/search" aria-label="Till sök">← Till sök</a></p>
+      <div className="card" style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:12}}>
+        <div>
+          <h1 style={{margin:'0 0 6px'}}>{match.name}</h1>
+          <div style={{color:'#64748b', fontSize:14}}>{(match.categories||[]).join(', ')}</div>
+        </div>
+        {website ? <a className="btn" href={website} target="_blank" rel="noopener">Boka / Mer info</a> : null}
+      </div>
       <div className="grid">
         <div className="card">
           <p>{desc}</p>
           <p><strong>Koordinater:</strong> {lat}, {lon}</p>
-          {website ? <p><a className="pill" href={website} target="_blank" rel="noopener">Boka/mer info</a></p> : null}
         </div>
         <div className="card">
           <iframe title="Karta" width="100%" height="300" style={{border:0}} loading="lazy"
