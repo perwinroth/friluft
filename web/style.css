@@ -44,6 +44,17 @@ html, body {
   box-shadow: 0 6px 20px rgba(255,56,92,0.18);
 }
 
+.clear-btn {
+  border: none;
+  background: #f4f4f4;
+  border-radius: 999px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.clear-btn:hover { background: #eee; }
+.clear-btn[hidden] { display: none; }
+
 .chips {
   pointer-events: all;
   margin-top: 10px;
@@ -178,3 +189,5 @@ html, body {
   margin-top: 8px;
   color: #b00020;
 }
+
+.hl { background: #fff1f3; padding: 0 2px; border-radius: 3px; }

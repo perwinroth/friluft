@@ -55,9 +55,43 @@ This repo includes a GitHub Actions workflow to scrape fresh data and publish th
 3. After the workflow finishes, open: `https://perwinroth.github.io/friluft/web/`.
 
 Workflow details:
-- Installs Python, scrapes OSM via Overpass (only features with website URLs), validates non-empty output.
-- Generates `web/list.html` and publishes `web/` and `data/` via Pages.
-- Retries the Overpass step up to 3 times to avoid transient errors.
+- Installs Python + deps, runs ETL (OSM + optional extra sources), enriches from OpenGraph.
+- Validates non-empty output, generates `web/list.html`, publishes `web/` and `data/` via Pages.
+- Weekly refresh via cron; configure extra source URLs via environment in the workflow.
+
+## Next.js app (bookable product MVP)
+
+- Location: `site/` (Next.js 14, App Router). Pages:
+  - `/` (home), `/search` (map + filters), `/l/[slug]` (listing), `/aktivitet/[slug]`, `/region/[slug]`.
+  - API stubs: `/api/listings` (GET), `/api/leads` (POST).
+- Dev
+  ```bash
+  cd site
+  npm install
+  npm run dev
+  # open http://localhost:3000
+  ```
+- Data access: server reads `../data/places.json` (fallback to `../data/friluft.geojson`). Run ETL before `npm run build` for fresh content.
+- SEO: JSON‑LD for WebSite/Product/Offer, Next sitemap, canonical metadata; static place pages also generated in `web/places/`.
+- Deploy (Vercel recommended): import `site/` as a project, set root to `friluft/site`, build command `npm run build`, output `.next`.
+
+## ETL (extended data pipeline)
+
+- Entry point: `etl/run_etl.py` combines sources, dedupes, enriches, and writes outputs:
+  - OSM via Overpass (website-only filter)
+  - Optional: HAV badplatser (env: `HAV_BADPLATSER_URL`)
+  - Optional: Municipal open dataset CSV/JSON (env: `MUNICIPAL_DATASET_URL`, `MUNICIPAL_DATASET_TYPE`, `MUNICIPAL_ACTIVITY`)
+  - Enrichment: fetch OpenGraph/schema.org from websites (limit via `ENRICH_MAX`)
+- Outputs:
+  - `data/places.json`: combined, enriched places
+  - `data/friluft.geojson`: geojson for the map
+
+Run locally:
+```bash
+OVERPASS_ENDPOINT=https://overpass.kumi.systems/api/interpreter \
+ENRICH_MAX=100 \
+python etl/run_etl.py
+```
 
 ## Push to GitHub
 

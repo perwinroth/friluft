@@ -190,6 +190,9 @@ function renderList() {
     `<div class="meta" style="padding:4px 8px; color:#666;">${items.length} platser</div>`
   ];
   items.forEach((it) => {
+    const slug = slugify(it.id);
+    const q = SEARCH_QUERY;
+    const nameHtml = q ? highlightName(it.name, q) : escapeHTML(it.name);
     const badges = it.cats
       .filter((c) => active.has(c))
       .map((c) => `<span class="badge" style="background:${CATEGORY_COLORS[c]}">${CATEGORY_LABELS[c] || c}</span>`)
@@ -197,7 +200,7 @@ function renderList() {
     const safeLink = it.link ? `<a href="${it.link}" target="_blank" rel="noopener">Länk</a>` : '';
     html.push(`
       <div class="list-item" data-id="${it.id}">
-        <div class="name">${it.name}</div>
+        <div class="name"><a href="places/${slug}.html">${nameHtml}</a></div>
         <div class="meta">${badges} ${safeLink}</div>
       </div>
     `);
@@ -264,11 +267,56 @@ function debounce(fn, ms) {
 
 function buildSearch() {
   const input = document.getElementById('searchInput');
+  const clearBtn = document.getElementById('clearSearch');
   if (!input) return;
   const onChange = debounce(() => {
     SEARCH_QUERY = (input.value || '').trim().toLowerCase();
+    if (clearBtn) clearBtn.hidden = SEARCH_QUERY.length === 0;
     applyFilter();
     renderList();
   }, 150);
   input.addEventListener('input', onChange);
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      SEARCH_QUERY = '';
+      clearBtn.hidden = true;
+      applyFilter();
+      renderList();
+      input.focus();
+    });
+  }
+}
+
+// Helpers for safe highlighting
+function escapeHTML(s) {
+  return (s || '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+}
+
+function highlightName(name, q) {
+  const source = String(name || '');
+  const lower = source.toLowerCase();
+  const query = String(q || '').toLowerCase();
+  if (!query) return escapeHTML(source);
+  let i = 0;
+  let res = '';
+  while (true) {
+    const idx = lower.indexOf(query, i);
+    if (idx === -1) {
+      res += escapeHTML(source.slice(i));
+      break;
+    }
+    res += escapeHTML(source.slice(i, idx));
+    res += '<span class="hl">' + escapeHTML(source.slice(idx, idx + query.length)) + '</span>';
+    i = idx + query.length;
+  }
+  return res;
+}
+
+function slugify(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '') || 'plats';
 }
