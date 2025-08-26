@@ -180,6 +180,16 @@ function applyFilter() {
 }
 
 document.addEventListener('DOMContentLoaded', initMap);
+// Default view classes
+window.addEventListener('load', () => {
+  if (window.innerWidth <= 900) {
+    document.body.classList.add('show-list');
+  }
+  const navMap = document.getElementById('navMap');
+  const navList = document.getElementById('navList');
+  if (navMap) navMap.addEventListener('click', (e) => { e.preventDefault(); document.body.classList.remove('show-list'); document.body.classList.add('show-map'); });
+  if (navList) navList.addEventListener('click', (e) => { e.preventDefault(); document.body.classList.remove('show-map'); document.body.classList.add('show-list'); });
+});
 
 function buildItems(geo) {
   ITEMS = new Map();
@@ -237,6 +247,7 @@ function renderList() {
       const id = el.getAttribute('data-id');
       const it = ITEMS.get(id);
       if (!it) return;
+      if (window.innerWidth <= 900) { document.body.classList.remove('show-list'); document.body.classList.add('show-map'); }
       THE_MAP.setView([it.lat, it.lng], Math.max(12, THE_MAP.getZoom()));
       const m = MARKER_BY_ID.get(id);
       if (m && CLUSTER) {

@@ -72,12 +72,12 @@ html, body {
 
 .nearby-btn {
   border: none;
-  background: #e5f3f1;
+  background: #def7ec;
   border-radius: 999px;
-  padding: 6px;
+  padding: 8px;
   cursor: pointer;
 }
-.nearby-btn:hover { background: #d8eeea; }
+.nearby-btn:hover { background: #c8f2e7; }
 
 .chips {
   pointer-events: all;
@@ -198,6 +198,14 @@ html, body {
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
   overflow: hidden;
+}
+
+/* Responsive: list-first on small screens, toggleable */
+@media (max-width: 900px) {
+  #controls { width: calc(100% - 24px); left: 12px; border-right: none; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+  #map { left: 12px; top: 124px; } /* below header + search bar */
+  body.show-list #map { display: none; }
+  body.show-map #controls { display: none; }
 }
 
 .dot span {
