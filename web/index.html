@@ -55,20 +55,20 @@
       }
     }
     </script>
-    <div id="searchbar" class="searchbar">
-      <div class="pill">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#5c5c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <input id="searchInput" type="text" placeholder="Sök plats eller aktivitet" autocomplete="off" />
-        <button id="clearSearch" class="clear-btn" title="Rensa" aria-label="Rensa sökfält" hidden>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="#8a8a8a" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-        <button id="nearbyBtn" class="nearby-btn" title="Nära mig" aria-label="Sortera efter avstånd">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m14.95 7.05l-2.83-2.83M9.88 6.83 7.05 4m9.9 0-2.83 2.83M9.88 17.17 7.05 20" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-      </div>
-      <div id="chips" class="chips"></div>
-    </div>
     <div id="controls">
+      <div class="searchbox">
+        <div class="pill">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#5c5c5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <input id="searchInput" type="text" placeholder="Sök plats eller aktivitet" autocomplete="off" />
+          <button id="clearSearch" class="clear-btn" title="Rensa" aria-label="Rensa sökfält" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="#8a8a8a" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+          <button id="nearbyBtn" class="nearby-btn" title="Nära mig" aria-label="Sortera efter avstånd">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v4m0 12v4m10-10h-4M6 12H2m14.95 7.05l-2.83-2.83M9.88 6.83 7.05 4m9.9 0-2.83 2.83M9.88 17.17 7.05 20" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div id="chips" class="chips"></div>
+      </div>
       <h1>Friluft</h1>
       <div id="filters"></div>
       <div id="list"></div>

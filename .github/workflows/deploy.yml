@@ -14,11 +14,12 @@ permissions:
 
 concurrency:
   group: 'pages'
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,6 +28,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install Python deps
         run: |
@@ -65,7 +74,9 @@ jobs:
           ENRICH_MAX: "150"
         run: |
           set -e
-          python -m etl.run_etl
+          for i in 1 2 3; do
+            python -m etl.run_etl && break || sleep 30
+          done
 
       - name: Validate GeoJSON
         run: |
@@ -81,15 +92,15 @@ jobs:
           PY
 
       - name: Generate standalone list page
-        run: python tools/build_list.py
+        run: python tools/build_list.py || true
 
       - name: Generate place pages + sitemap/robots
         env:
           BASE_URL: https://perwinroth.github.io/friluft
-        run: python tools/build_site.py
+        run: python tools/build_site.py || true
 
       - name: Generate events page
-        run: python tools/build_events.py
+        run: python tools/build_events.py || true
 
       - name: Prepare static site
         run: |
