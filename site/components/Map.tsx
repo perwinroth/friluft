@@ -65,6 +65,11 @@ export default function Map({ query = '', cats = [], height = '60vh' }: Props) {
           if (!qok || !cok) return;
           const marker = L.marker([lat, lon]);
           marker.bindPopup(`<strong>${name}</strong><br/><a href="${link}" target="_blank" rel="noopener">Länk</a>`);
+          marker.on('click', () => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('friluft:select', { detail: { props: p, lat, lon } }))
+            }
+          });
           // @ts-ignore
           if (cluster.addLayer) cluster.addLayer(marker); else marker.addTo(cluster);
         });

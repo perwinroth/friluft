@@ -124,9 +124,11 @@ function popupHtml(props) {
   const book = props.bookable ? ' • Bokningsbar' : '';
   const safeLink = link ? `<a href="${link}" target="_blank" rel="noopener">${props.bookable ? 'Boka' : 'Länk'}</a>` : '';
   const icon = (props.categories && props.categories[0]) ? iconFor(props.categories[0], 14) : '';
+  const linkBadge = (typeof props.link_ok === 'boolean') ? `<span class="badge ${props.link_ok ? 'ok' : 'err'}" style="margin-left:6px">${props.link_ok ? 'Länk OK' : 'Länk fel'}</span>` : '';
+  const openBadge = (typeof props.open_now === 'boolean') ? `<span class="badge ${props.open_now ? 'ok' : 'warn'}" style="margin-left:6px">${props.open_now ? 'Öppet' : 'Stängt'}</span>` : '';
   return `
     <div class="popup">
-      <strong>${icon}${name}</strong><br/>
+      <strong>${icon}${name}</strong> ${openBadge} ${linkBadge}<br/>
       <small>${cats}${book}</small><br/>
       ${safeLink}
     </div>
@@ -202,6 +204,8 @@ function buildItems(geo) {
         , link: p.link || p.osm_url,
       cats: p.categories || [],
       lat, lng,
+      open_now: p.open_now,
+      link_ok: p.link_ok,
     });
   });
 }
@@ -247,6 +251,7 @@ function renderList() {
       const id = el.getAttribute('data-id');
       const it = ITEMS.get(id);
       if (!it) return;
+      showDetails(it, it.lat, it.lng);
       if (window.innerWidth <= 900) { document.body.classList.remove('show-list'); document.body.classList.add('show-map'); }
       THE_MAP.setView([it.lat, it.lng], Math.max(12, THE_MAP.getZoom()));
       const m = MARKER_BY_ID.get(id);
@@ -257,6 +262,27 @@ function renderList() {
       }
     });
   });
+}
+
+function showDetails(props, lat, lng) {
+  const el = document.getElementById('details');
+  if (!el) return;
+  const icon = (props.cats && props.cats[0]) ? iconFor(props.cats[0], 16) : ((props.categories && props.categories[0]) ? iconFor(props.categories[0],16) : '');
+  const name = escapeHTML(props.name || '(namnlös)');
+  const cats = (props.cats || props.categories || []).map((c) => escapeHTML(CATEGORY_LABELS[c] || c)).join(', ');
+  const link = props.link || props.osm_url;
+  const openBadge = (typeof props.open_now === 'boolean') ? `<span class=\"badge ${props.open_now ? 'ok' : 'warn'}\">${props.open_now ? 'Öppet' : 'Stängt'}</span>` : '';
+  const linkBadge = (typeof props.link_ok === 'boolean') ? `<span class=\"badge ${props.link_ok ? 'ok' : 'err'}\">${props.link_ok ? 'Länk OK' : 'Länk fel'}</span>` : '';
+  const rows = [];
+  rows.push(`<div class=\"row\">${cats} ${openBadge} ${linkBadge}</div>`);
+  rows.push(`<div class=\"row\">Koordinater: ${lat?.toFixed ? lat.toFixed(5) : lat}, ${lng?.toFixed ? lng.toFixed(5) : lng}</div>`);
+  el.innerHTML = `
+    <div class=\"title\">${icon}${name}</div>
+    ${rows.join('')}
+    <div class=\"actions\">
+      ${link ? `<a class=\"btn\" href=\"${link}\" target=\"_blank\" rel=\"noopener\">Besök webbplats</a>` : ''}
+    </div>
+  `;
 }
 
 // Category chips in the search area

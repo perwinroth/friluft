@@ -2,6 +2,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import ResultsList from '../../components/ResultsList'
+import DetailsPanel from '../../components/DetailsPanel'
 
 const LeafletMap = dynamic(()=> import('../../components/Map'), { ssr: false });
 
@@ -45,8 +46,11 @@ export default function SearchPage() {
         <div className="card" style={{minHeight:'60vh', display: show==='list' ? 'none' : 'block'}}>
           <LeafletMap query={query} cats={activeCats} height="56vh" />
         </div>
-        <div className="card" style={{display: show==='map' ? 'none' : 'block'}}>
-          <ResultsList query={query} cats={activeCats} />
+        <div style={{display: show==='map' ? 'none' : 'block'}}>
+          <DetailsPanel />
+          <div className="card">
+            <ResultsList query={query} cats={activeCats} />
+          </div>
         </div>
       </div>
       <div className="card" style={{position:'sticky', bottom:12, display: 'flex', justifyContent:'center'}}>

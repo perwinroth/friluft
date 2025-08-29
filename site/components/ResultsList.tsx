@@ -14,6 +14,8 @@ export default function ResultsList({ query = '', cats = [] }: Props) {
         link: f.properties?.link || f.properties?.osm_url,
         cats: f.properties?.categories || [],
         bookable: !!f.properties?.bookable,
+        open_now: f.properties?.open_now,
+        link_ok: f.properties?.link_ok,
         lat: f.geometry?.coordinates?.[1],
         lon: f.geometry?.coordinates?.[0]
       })))
@@ -48,10 +50,16 @@ export default function ResultsList({ query = '', cats = [] }: Props) {
                 </span>
               ))}
             </div>
-            <div style={{display:'flex', gap:10, alignItems:'center'}}>
+            <div style={{display:'flex', gap:10, alignItems:'center', flexWrap:'wrap'}}>
               {it.link ? <a className="btn" href={it.link} target="_blank" rel="noopener">{it.bookable ? 'Boka' : 'Länk'}</a> : null}
               <Link className="btn" href={`/l/${slugify(it.id)}`} style={{background:'#1f2937'}}>Detaljer</Link>
               <button className="btn" style={{background:'#334155'}} onClick={()=>focusOnMap(it.lat, it.lon)}>Visa på karta</button>
+              {typeof it.open_now === 'boolean' && (
+                <span className="badge" style={{background:it.open_now?'#0f766e':'#b45309', color:'#fff'}}>{it.open_now?'Öppet':'Stängt'}</span>
+              )}
+              {typeof it.link_ok === 'boolean' && (
+                <span className="badge" style={{background:it.link_ok?'#0f766e':'#b00020', color:'#fff'}}>{it.link_ok?'Länk OK':'Länk fel'}</span>
+              )}
             </div>
           </li>
         ))}

@@ -18,6 +18,8 @@ from .sources.events_ical import fetch_events
 from .sources.ckan_search import fetch_ckan_places
 from .sources.municipal_list import fetch_municipal_list
 from .crawl.municipal_crawler import crawl_municipality
+from .util.linkcheck import check_links
+from .util.openhours import is_open_now
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / 'data'
@@ -26,6 +28,7 @@ DATA_DIR = ROOT / 'data'
 def place_from_osm_feature(f: Dict[str, Any]) -> Dict[str, Any]:
     p = f.get('properties', {})
     [lon, lat] = f.get('geometry', {}).get('coordinates', [None, None])
+    tags = p.get('tags', {}) or {}
     return {
         'id': p.get('id'),
         'name': p.get('name'),
@@ -36,7 +39,8 @@ def place_from_osm_feature(f: Dict[str, Any]) -> Dict[str, Any]:
         'source': {'name': 'OSM', 'url': p.get('osm_url'), 'license': 'ODbL'},
         'amenities': [],
         'images': [],
-        'opening_hours': None,
+        'opening_hours': tags.get('opening_hours'),
+        'open_now': True if (tags.get('opening_hours') or '').strip() == '24/7' else None,
         'description': None,
     }
 
@@ -140,6 +144,29 @@ def main() -> int:
     for p in places:
         ensure_name(p)
 
+    # Link checks (limit to avoid long runs)
+    max_linkcheck = int(os.environ.get('LINKCHECK_MAX', '200'))
+    sample = [pl for pl in places if pl.get('website')][:max_linkcheck]
+    results = check_links([pl['website'] for pl in sample], concurrency=int(os.environ.get('LINKCHECK_CONCURRENCY', '10')))
+    for pl, res in zip(sample, results):
+        pl['link_ok'] = bool(res.get('ok'))
+        if res.get('status') is not None:
+            pl['link_status'] = res.get('status')
+        if res.get('final') and res.get('final') != pl.get('website'):
+            pl['website_final'] = res.get('final')
+
+    # Opening-hours evaluation (basic): compute open_now where possible
+    for pl in places:
+        oh = (pl.get('opening_hours') or '').strip()
+        if not oh:
+            continue
+        if oh.lower() == '24/7':
+            pl['open_now'] = True
+        else:
+            val = is_open_now(oh)
+            if val is not None:
+                pl['open_now'] = val
+
     # Write combined JSON and GeoJSON for the map
     (DATA_DIR / 'places.json').write_text(json.dumps(places, ensure_ascii=False), encoding='utf-8')
 
@@ -158,6 +185,8 @@ def main() -> int:
                 'link': pl.get('website'),
                 'osm_url': pl.get('source', {}).get('url'),
                 'bookable': pl.get('bookable', False),
+                'open_now': pl.get('open_now', None),
+                'link_ok': pl.get('link_ok', None),
             },
         })
     (DATA_DIR / 'friluft.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'features': features}, ensure_ascii=False), encoding='utf-8')

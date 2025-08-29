@@ -32,8 +32,10 @@ python scraper/overpass_scraper.py --out data/friluft.geojson
 Options:
 
 - `--categories`: Comma-separated subset of categories to fetch. Defaults to all.
-  - Available: `national_park,nature_reserve,camp_site,shelter,viewpoint,picnic_site,slipway,canoe_kayak,boat_rental`
-- `--endpoint`: Overpass endpoint (default: https://overpass-api.de/api/interpreter)
+  - Available: `national_park,nature_reserve,camp_site,shelter,viewpoint,picnic_site,slipway,canoe_kayak,boat_rental,trailhead,bbq,drinking_water,toilets,swimming_area`
+- `--endpoint`: Overpass endpoints (comma-separated to rotate; default includes kumi + overpass-api.de)
+- `--include-social`: Allow social profile URLs if `website` is missing (e.g. Facebook/Instagram/Twitter)
+- `--retries`: Retries per Overpass query across endpoints (default 3)
 
 ## Run the map
 

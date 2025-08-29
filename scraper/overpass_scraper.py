@@ -1,6 +1,8 @@
 import argparse
 import json
 import sys
+import time
+import random
 from typing import Dict, List, Tuple, Any
 from urllib.parse import urlparse
 
@@ -8,6 +10,10 @@ import requests
 
 
 DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter"
+DEFAULT_ENDPOINTS = [
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
+]
 
 
 # Category definitions with Overpass tag selectors.
@@ -47,6 +53,22 @@ CATEGORY_DEFS: Dict[str, List[str]] = {
         '["amenity"="boat_rental"]',
         '["shop"="boat_rental"]',
     ],
+    # Trailheads / facilities (quality-of-life filters)
+    "trailhead": [
+        '["tourism"="information"]["information"="trailhead"]',
+    ],
+    "bbq": [
+        '["amenity"="bbq"]',
+    ],
+    "drinking_water": [
+        '["amenity"="drinking_water"]',
+    ],
+    "toilets": [
+        '["amenity"="toilets"]',
+    ],
+    "swimming_area": [
+        '["leisure"="swimming_area"]',
+    ],
 }
 
 
@@ -62,10 +84,27 @@ def build_category_query(area_alias: str, tag_expr: str) -> str:
     )
 
 
-def run_overpass(endpoint: str, ql: str) -> Dict[str, Any]:
-    resp = requests.post(endpoint, data={"data": ql}, timeout=180)
-    resp.raise_for_status()
-    return resp.json()
+def run_overpass(endpoints: List[str], ql: str, retries: int = 3) -> Dict[str, Any]:
+    headers = {
+        "User-Agent": "FriluftScraper/0.1 (+https://github.com/perwinroth/friluft)",
+        "Accept-Language": "sv,en;q=0.8",
+    }
+    eps = list(endpoints)
+    last_err: Exception | None = None
+    for attempt in range(retries):
+        random.shuffle(eps)
+        for ep in eps:
+            try:
+                resp = requests.post(ep, data={"data": ql}, headers=headers, timeout=180)
+                resp.raise_for_status()
+                return resp.json()
+            except Exception as e:
+                last_err = e
+                time.sleep(2 * (attempt + 1))
+                continue
+    if last_err:
+        raise last_err
+    return {"elements": []}
 
 
 def choose_name(tags: Dict[str, str]) -> str:
@@ -76,13 +115,27 @@ def choose_name(tags: Dict[str, str]) -> str:
     return "(namnlös)"
 
 
-def choose_website(tags: Dict[str, str]) -> str:
+def choose_website(tags: Dict[str, str], include_social: bool = True) -> str:
     for k in ("website", "contact:website", "url"):
         v = tags.get(k)
         if v:
             if v.startswith("http://") or v.startswith("https://"):
                 return v
             return "https://" + v
+    if include_social:
+        for k in ("facebook", "contact:facebook", "instagram", "contact:instagram", "twitter", "contact:twitter"):
+            v = tags.get(k)
+            if not v:
+                continue
+            if v.startswith("http://") or v.startswith("https://"):
+                return v
+            h = v.strip("/")
+            if "facebook" in k:
+                return f"https://facebook.com/{h}"
+            if "instagram" in k:
+                return f"https://instagram.com/{h}"
+            if "twitter" in k:
+                return f"https://twitter.com/{h}"
     return ""
 
 
@@ -90,9 +143,9 @@ def osm_url(el: Dict[str, Any]) -> str:
     return f"https://www.openstreetmap.org/{el['type']}/{el['id']}"
 
 
-def to_feature(el: Dict[str, Any], categories: List[str]) -> Dict[str, Any]:
+def to_feature(el: Dict[str, Any], categories: List[str], include_social: bool = True) -> Dict[str, Any]:
     tags = el.get("tags", {})
-    website = choose_website(tags)
+    website = choose_website(tags, include_social=include_social)
     if not website:
         # Only keep features that have an explicit website/contact URL
         raise ValueError("Missing website link")
@@ -145,13 +198,15 @@ def build_master_query(categories: List[str]) -> List[Tuple[str, str]]:
     return pairs
 
 
-def scrape(endpoint: str, categories: List[str]) -> List[Dict[str, Any]]:
+def scrape(endpoint: str, categories: List[str], include_social: bool = True, retries: int = 3) -> List[Dict[str, Any]]:
     # Accumulate elements and their categories by (type, id)
     elements: Dict[Tuple[str, int], Dict[str, Any]] = {}
     el_cats: Dict[Tuple[str, int], List[str]] = {}
 
+    endpoints = [e.strip() for e in endpoint.split(',') if e.strip()] or DEFAULT_ENDPOINTS
+
     for cat, ql in build_master_query(categories):
-        data = run_overpass(endpoint, ql)
+        data = run_overpass(endpoints, ql, retries=retries)
         for el in data.get("elements", []):
             key = (el.get("type"), el.get("id"))
             if key not in elements:
@@ -164,7 +219,7 @@ def scrape(endpoint: str, categories: List[str]) -> List[Dict[str, Any]]:
     for key, el in elements.items():
         cats = el_cats.get(key, [])
         try:
-            feat = to_feature(el, cats)
+            feat = to_feature(el, cats, include_social=include_social)
             features.append(feat)
         except Exception:
             # Skip elements without usable coordinates
@@ -180,13 +235,15 @@ def write_geojson(features: List[Dict[str, Any]], out_path: str) -> None:
 
 def main(argv: List[str]) -> int:
     parser = argparse.ArgumentParser(description="Scrape Swedish friluftsliv POIs from OSM via Overpass")
-    parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT, help="Overpass API endpoint")
+    parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT, help="Overpass API endpoint (comma-separated to rotate)")
     parser.add_argument(
         "--categories",
         default=",".join(CATEGORY_DEFS.keys()),
         help="Comma-separated categories to include",
     )
     parser.add_argument("--out", default="data/friluft.geojson", help="Output GeoJSON path")
+    parser.add_argument("--include-social", action="store_true", help="Allow social profile URLs if no website present")
+    parser.add_argument("--retries", type=int, default=3, help="Retries per Overpass query across endpoints")
     args = parser.parse_args(argv)
 
     cats = [c.strip() for c in args.categories.split(",") if c.strip()]
@@ -198,7 +255,7 @@ def main(argv: List[str]) -> int:
         return 2
 
     print(f"Fetching categories: {', '.join(cats)}")
-    features = scrape(args.endpoint, cats)
+    features = scrape(args.endpoint, cats, include_social=args.include_social, retries=args.retries)
     print(f"Fetched features: {len(features)}")
     write_geojson(features, args.out)
     print(f"Wrote {args.out}")
