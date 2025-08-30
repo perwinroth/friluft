@@ -38,6 +38,7 @@ export default function EventsPage() {
       <head>
         <title>Friluft – Evenemang</title>
         <meta name="description" content="Kalender med lopp och evenemang inom friluftsliv i Sverige." />
+        <link rel="canonical" href="https://perwinroth.github.io/friluft/events" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
       </head>
       <h1>Evenemang</h1>

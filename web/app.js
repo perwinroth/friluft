@@ -237,11 +237,10 @@ function renderList() {
       .join(' ');
     const safeLink = it.link ? `<a href="${it.link}" target="_blank" rel="noopener">Länk</a>` : '';
     const dist = (USER_POS && typeof it._dist === 'number') ? ` <small style="color:#64748b">${it._dist.toFixed(1)} km</small>` : '';
+    const openBadge = (typeof it.open_now === 'boolean') ? `<span class=\"badge ${it.open_now ? 'ok' : 'warn'}\">${it.open_now ? 'Öppet' : 'Stängt'}</span>` : '';
+    const linkBadge = (typeof it.link_ok === 'boolean') ? `<span class=\"badge ${it.link_ok ? 'ok' : 'err'}\">${it.link_ok ? 'Länk OK' : 'Länk fel'}</span>` : '';
     html.push(`
-      <div class="list-item" data-id="${it.id}">
-        <div class="name">${it.cats && it.cats[0] ? iconFor(it.cats[0],14) : ''}<a href="places/${slug}.html">${nameHtml}</a>${dist} ${it.bookable ? '<span class="badge" style="background:#0f766e">Boka</span>' : ''}</div>
-        <div class="meta">${badges} ${safeLink}</div>
-      </div>
+      <div class=\"list-item\" data-id=\"${it.id}\">\n        <div class=\"name\">${it.cats && it.cats[0] ? iconFor(it.cats[0],14) : ''}<a href=\"places/${slug}.html\">${nameHtml}</a>${dist} ${openBadge} ${linkBadge} ${it.bookable ? '<span class=\\"badge\\" style=\\"background:#0f766e\\">Boka</span>' : ''}</div>\n        <div class=\"meta\">${badges} ${safeLink}</div>\n      </div>
     `);
   });
   listEl.innerHTML = html.join('\n');

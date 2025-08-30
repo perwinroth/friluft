@@ -9,6 +9,8 @@ export type Place = {
   lon?: number
   website?: string
   description?: string
+  open_now?: boolean
+  link_ok?: boolean
 }
 
 export async function loadPlaces(): Promise<Place[]> {
@@ -26,7 +28,9 @@ export async function loadPlaces(): Promise<Place[]> {
       categories: f.properties?.categories || [],
       lat: f.geometry?.coordinates?.[1],
       lon: f.geometry?.coordinates?.[0],
-      website: f.properties?.link
+      website: f.properties?.link,
+      open_now: f.properties?.open_now,
+      link_ok: f.properties?.link_ok,
     }))
   }
 }
@@ -38,4 +42,3 @@ export function slugify(s: string): string {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '') || 'plats';
 }
-

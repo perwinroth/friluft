@@ -39,6 +39,7 @@ export default async function ListingPage({ params }: { params: { slug: string }
       <head>
         <title>{title}</title>
         <meta name="description" content={desc} />
+        <link rel="canonical" href={`https://perwinroth.github.io/friluft/l/${params.slug}`} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(breadcrumbs)}} />
       </head>
@@ -46,7 +47,19 @@ export default async function ListingPage({ params }: { params: { slug: string }
       <div className="card" style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:12}}>
         <div>
           <h1 style={{margin:'0 0 6px'}}>{match.name}</h1>
-          <div style={{color:'#64748b', fontSize:14}}>{(match.categories||[]).join(', ')}</div>
+          <div style={{color:'#64748b', fontSize:14}}>
+            {(match.categories||[]).join(', ')}{' '}
+            {typeof match.open_now === 'boolean' && (
+              <span className="badge" style={{background:match.open_now?'#0f766e':'#b45309', color:'#fff', marginLeft:6}}>
+                {match.open_now?'Öppet':'Stängt'}
+              </span>
+            )}
+            {typeof match.link_ok === 'boolean' && (
+              <span className="badge" style={{background:match.link_ok?'#0f766e':'#b00020', color:'#fff', marginLeft:6}}>
+                {match.link_ok?'Länk OK':'Länk fel'}
+              </span>
+            )}
+          </div>
         </div>
         {website ? <a className="btn" href={website} target="_blank" rel="noopener">Boka / Mer info</a> : null}
       </div>

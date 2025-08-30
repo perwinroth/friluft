@@ -31,7 +31,7 @@ export default function SearchPage() {
   return (
     <div className="container">
       <head>
-        <link rel="canonical" href="https://perwinroth.github.io/friluft/web/" />
+        <link rel="canonical" href="https://perwinroth.github.io/friluft/search" />
       </head>
       <div className="pill" style={{position:'sticky', top:8, zIndex:10}}>
         <span>🔍</span>
