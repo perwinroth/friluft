@@ -5,7 +5,7 @@ export default function DashboardPage() {
   const [form, setForm] = useState({ title:'', website:'', price_from:'', categories:'', description:'' })
   const submit = async (e: any) => {
     e.preventDefault();
-    await fetch('/api/leads', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'listing-proposal', ...form }) })
+    await fetch('/api/proposals', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'listing-proposal', ...form }) })
     alert('Tack! Vi hör av oss. (Detta är en MVP-demo)')
     setForm({ title:'', website:'', price_from:'', categories:'', description:'' })
   }
@@ -29,4 +29,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

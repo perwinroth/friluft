@@ -85,13 +85,14 @@ Workflow details:
   - Optional: Municipal open dataset CSV/JSON (env: `MUNICIPAL_DATASET_URL`, `MUNICIPAL_DATASET_TYPE`, `MUNICIPAL_ACTIVITY`)
   - Enrichment: fetch OpenGraph/schema.org from websites (limit via `ENRICH_MAX`)
 - Outputs:
-  - `data/places.json`: combined, enriched places
-  - `data/friluft.geojson`: geojson for the map
+  - `data/places.json`: combined, enriched places (includes opening_hours, open_now when determined, link_ok, link_status, website_final)
+  - `data/friluft.geojson`: geojson for the map (includes open_now, link_ok to show status badges)
 
 Run locally:
 ```bash
 OVERPASS_ENDPOINT=https://overpass.kumi.systems/api/interpreter \
 ENRICH_MAX=100 \
+LINKCHECK_MAX=100 \
 python etl/run_etl.py
 ```
 
